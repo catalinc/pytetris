@@ -42,6 +42,9 @@ class Piece(object):
             b >>= 1
         return blocks
 
+    def position(self):
+        return self.row, self.col
+
     def move(self, direction):
         self.row += direction.delta_row
         self.col += direction.delta_col
@@ -50,15 +53,18 @@ class Piece(object):
         d = -1 if ccw else 1
         self.rot = (self.rot + d) % len(self.shape.blocks)
 
-    def pos(self):
-        return self.row, self.col
-
 
 class Block(object):
     def __init__(self, row, col, color):
         self.row = row
         self.col = col
         self.color = color
+
+    def __eq__(self, other):
+        return self.row == other.row and self.col == other.col
+
+    def __str__(self):
+        return '({}, {})'.format(self.row, self.col)
 
 
 class Board(object):
@@ -72,7 +78,7 @@ class Board(object):
         for b in piece.blocks():
             if b.row == self.rows - 1:
                 return True
-            if self._block(b.row + 1, b.col):
+            if self.block_at(b.row + 1, b.col):
                 return True
         return False
 
@@ -83,12 +89,12 @@ class Board(object):
     def can_move(self, piece, direction):
         p = copy.deepcopy(piece)
         p.move(direction)
-        return self._valid_pos(p)
+        return self.has_valid_position(p)
 
     def can_rotate(self, piece, ccw=False):
         p = copy.deepcopy(piece)
         p.rotate(ccw)
-        return self._valid_pos(p)
+        return self.has_valid_position(p)
 
     def remove_lines(self):
         lines = 0
@@ -96,149 +102,157 @@ class Board(object):
         while row >= 0:
             found = True
             for col in xrange(0, self.cols):
-                if not self._block(row, col):
+                if not self.block_at(row, col):
                     found = False
                     break
             if found:
                 lines += 1
                 for col in xrange(0, self.cols):
-                    self._remove_block(row, col)
+                    self.remove_block(row, col)
                 for col in xrange(0, self.cols):
                     for r in xrange(row - 1, -1, -1):
-                        b = self._block(r, col)
+                        b = self.block_at(r, col)
                         if b:
-                            b.row -= 1
+                            b.row += 1
                 row += 1
             else:
                 row -= 1
         return lines
 
-    def _valid_pos(self, piece):
+    def has_valid_position(self, piece):
         for b in piece.blocks():
             if b.row < 0 \
                     or b.row >= self.rows \
                     or b.col < 0 \
                     or b.col >= self.cols \
-                    or self._block(b.row, b.col):
+                    or self.block_at(b.row, b.col):
                 return False
         return True
 
-    def _block(self, row, col):
+    def block_at(self, row, col):
         for b in self.landed:
             if b.row == row and b.col == col:
                 return b
 
-    def _remove_block(self, row, col):
+    def remove_block(self, row, col):
         for i in xrange(len(self.landed)):
             b = self.landed[i]
             if b.row == row and b.col == col:
                 self.landed.pop(i)
                 break
 
-class Game(object):
-    def __init__(self, width, height, rows, cols):
+
+class GameState(object):
+    def __init__(self, rows, cols):
         self.board = Board(rows, cols)
-        self.size = width, height
         self.score = 0
         self.piece = None
-        self._random_shapes = []
+        self.next_shapes = []
+        self.elapsed = 0
+        self.next_piece()
 
-    def loop(self):
+    def next_piece(self):
+        if not self.next_shapes:
+            self.next_shapes = [I, J, L, O, S, T, Z]
+            random.shuffle(self.next_shapes)
+        shape = self.next_shapes.pop(0)
+        row = col = 0
+        if shape in (I, O):
+            col = self.board.cols / 2
+        self.piece = Piece(shape, row, col)
+
+    def move_piece(self, direction):
+        if self.board.can_move(self.piece, direction):
+            self.piece.move(direction)
+
+    def drop_piece(self):
+        while not self.board.has_landed(self.piece):
+            self.move_piece(DOWN)
+
+    def rotate_piece(self, ccw=False):
+        if self.board.can_rotate(self.piece, ccw):
+            self.piece.rotate(ccw)
+
+    def update(self, dt):
+        self.elapsed += dt
+        if self.elapsed >= 1000:
+            if not self.board.has_landed(self.piece):
+                self.move_piece(DOWN)
+                self.elapsed = 0
+        if self.board.has_landed(self.piece):
+            self.board.land(self.piece)
+            self.next_piece()
+        self.board.remove_lines()
+
+
+class Game(object):
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+        self.state = GameState(20, 10)
+        self.block_size = height / self.state.board.rows
+        self.board_width = self.block_size * self.state.board.cols
+        self.board_height = self.block_size * self.state.board.rows
         pygame.init()
         pygame.display.set_caption('Tetris')
-        screen = pygame.display.set_mode(self.size)
-        clock = pygame.time.Clock()
-        elapsed = [0]
-        screen_width, screen_height = self.size
-        block_size = screen_height / self.board.rows
-        board_width = block_size * self.board.cols
-        board_height = block_size * self.board.rows
-        text_color = pygame.Color('green')
-        font = pygame.font.SysFont('monospace', 12, bold=True)
+        self.screen = pygame.display.set_mode((width, height))
+        self.clock = pygame.time.Clock()
+        self.font = pygame.font.SysFont('monospace', 12, bold=True)
+        self.text_color = pygame.Color('green')
+        self.background_color = pygame.Color('black')
 
-        def draw_block(block):
-            x = block.col * block_size
-            y = block.row * block_size
-            pygame.draw.rect(screen, block.color, (x, y, block_size, block_size))
+    def draw_block(self, block):
+        x = block.col * self.block_size
+        y = block.row * self.block_size
+        pygame.draw.rect(self.screen, block.color, (x, y, self.block_size, self.block_size))
 
-        def draw_text(text, y):
-            w, h = font.size(text)
-            text_surface = font.render(text, 1, text_color)
-            screen.blit(text_surface,
-                        (board_width + (screen_width - board_width - w) / 2, y))
+    def draw_text(self, text, y):
+        w, h = self.font.size(text)
+        text_surface = self.font.render(text, 1, self.text_color)
+        self.screen.blit(text_surface,
+                         (self.board_width + (self.width - self.board_width - w) / 2, y))
 
-        def next_piece():
-            if not self._random_shapes:
-                self._random_shapes = [I, J, L, O, S, T, Z]
-                random.shuffle(self._random_shapes)
-            shape = self._random_shapes.pop(0)
-            row = col = 0
-            if shape in (I, O):
-                col = self.board.cols / 2
-            self.piece = Piece(shape, row, col)
+    def process_input(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_DOWN:
+                    self.state.move_piece(DOWN)
+                if event.key == pygame.K_LEFT:
+                    self.state.move_piece(LEFT)
+                if event.key == pygame.K_RIGHT:
+                    self.state.move_piece(RIGHT)
+                if event.key == pygame.K_x:
+                    self.state.rotate_piece()
+                if event.key == pygame.K_z:
+                    self.state.rotate_piece(True)
+                if event.key == pygame.K_SPACE:
+                    self.state.drop_piece()
 
-        def move_piece(direction):
-            if self.board.can_move(self.piece, direction):
-                self.piece.move(direction)
+    def update_state(self):
+        self.state.update(self.clock.get_time())
 
-        def drop_piece():
-            while not self.board.has_landed(self.piece):
-                move_piece(DOWN)
+    def render(self):
+        self.screen.fill(self.background_color)
+        pygame.draw.rect(self.screen, self.text_color, (0, 0, self.board_width, self.board_height), 1)
+        for b in self.state.board.landed:
+            self.draw_block(b)
+        for b in self.state.piece.blocks():
+            self.draw_block(b)
+        self.draw_text('Next', self.block_size)
+        self.draw_text('Score', self.block_size * 2)
+        self.draw_text('%d' % self.state.score, self.block_size * 3)
+        pygame.display.flip()
+        self.clock.tick(60)
 
-        def rotate_piece(ccw=False):
-            if self.board.can_rotate(self.piece, ccw):
-                self.piece.rotate(ccw)
-
-        def process_input():
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    sys.exit()
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_DOWN:
-                        move_piece(DOWN)
-                    if event.key == pygame.K_LEFT:
-                        move_piece(LEFT)
-                    if event.key == pygame.K_RIGHT:
-                        move_piece(RIGHT)
-                    if event.key == pygame.K_x:
-                        rotate_piece()
-                    if event.key == pygame.K_z:
-                        rotate_piece(True)
-                    if event.key == pygame.K_SPACE:
-                        drop_piece()
-
-        def update_state():
-            elapsed[0] += clock.get_time()
-            if elapsed[0] >= 1000:
-                if not self.board.has_landed(self.piece):
-                    move_piece(DOWN)
-                    elapsed[0] = 0
-            if self.board.has_landed(self.piece):
-                self.board.land(self.piece)
-                next_piece()
-            self.board.remove_lines()
-
-        def render():
-            screen.fill(self.board.background)
-            pygame.draw.rect(screen, text_color, (0, 0, board_width, board_height), 1)
-            for b in self.board.landed:
-                draw_block(b)
-            for b in self.piece.blocks():
-                draw_block(b)
-            draw_text('Next', block_size)
-            draw_text('Score', block_size * 2)
-            draw_text('%d' % self.score, block_size * 3)
-            pygame.display.flip()
-            clock.tick(60)
-
-        next_piece()
-
+    def loop(self):
         while True:
-            process_input()
-            update_state()
-            render()
+            self.process_input()
+            self.update_state()
+            self.render()
 
 
 if __name__ == '__main__':
-    game = Game(380, 480, 20, 10)
+    game = Game(380, 480)
     game.loop()
