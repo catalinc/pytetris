@@ -149,6 +149,7 @@ class GameState(object):
         self.piece = None
         self.next_shapes = []
         self.elapsed = 0
+        self.level = 0
         self.next_piece()
 
     def next_piece(self):
@@ -182,7 +183,14 @@ class GameState(object):
         if self.board.has_landed(self.piece):
             self.board.land(self.piece)
             self.next_piece()
-        self.board.remove_lines()
+        lines = self.board.remove_lines()
+        if lines:
+            self.update_score(lines)
+
+    POINTS = {1: 40, 2: 100, 3: 300, 4: 1200}
+
+    def update_score(self, lines):
+        self.score += self.POINTS.get(lines) * (self.level + 1)
 
 
 class Game(object):
