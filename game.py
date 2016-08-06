@@ -146,7 +146,7 @@ class Game(object):
         self.draw_background()
         self.draw_piece(self.state.piece)
         self.draw_text('Level', self.block_size)
-        self.draw_text('%d' % self.state.level, self.block_size * 2)
+        self.draw_text('%d' % (self.state.level + 1), self.block_size * 2)
         self.draw_text('Score', self.block_size * 3)
         self.draw_text('%d' % self.state.score, self.block_size * 4)
         self.draw_text('Next', self.block_size * 5)
@@ -163,6 +163,6 @@ class Game(object):
 
 if __name__ == '__main__':
     pygame.init()
-    pygame.display.set_caption('Tetris')
+    pygame.display.set_caption('PyTetris')
     game = Game(380, 480)
     game.loop()
