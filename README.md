@@ -16,5 +16,5 @@ Run `python game.py` to start the game.
 * Space - drop piece
 
 ### Todo
-* Game over and restart
-* Pause / resume
+- [ ] Game over and restart
+- [ ] Pause / resume
