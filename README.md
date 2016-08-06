@@ -8,13 +8,12 @@ _WIP_
 * Pygame >= 1.9.2
 
 ### Instructions
-`python game.py` to start the game.
-
-### Controls
-* ←,↓,→ - move
-* z - rotate CW
-* x - rotate CCW
-* Space - drop
+Run `python game.py` to start the game.
+Controls:
+* ←,↓,→ - move piece
+* z - rotate piece CW
+* x - rotate piece CCW
+* Space - drop piece
 
 ### Todo
 * Game over and restart
