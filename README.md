@@ -3,7 +3,7 @@ Tetris clone written with Python and Pygame.
 
 _WIP_
 
-Mandatory screenshot
+#### Mandatory screenshot
 ![demo](https://github.com/catalinc/pytetris/raw/master/demo.png)
 
 ### Requirements
