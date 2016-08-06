@@ -9,7 +9,7 @@ _WIP_
 
 ### Instructions
 Run `python game.py` to start the game.
-Controls:
+#### Controls ####
 * ←,↓,→ - move piece
 * z - rotate piece CW
 * x - rotate piece CCW
