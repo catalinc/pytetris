@@ -60,7 +60,7 @@ class State(object):
                 self.next_level()
 
     def game_over(self):
-        for c in xrange(self.board.cols):
+        for c in range(self.board.cols):
             if self.board.block_at(0, c):
                 return True
 
@@ -84,7 +84,8 @@ class Game(object):
         self.board_height = self.block_size * self.state.board.rows
         self.screen = pygame.display.set_mode((width, height))
         self.clock = pygame.time.Clock()
-        self.font = pygame.font.SysFont('monospace', 12, bold=True)
+        self.font = pygame.font.Font(None, 16)
+        self.font.set_bold(True)
         self.text_color = pygame.Color('yellow')
         self.background_color = pygame.Color('black')
 

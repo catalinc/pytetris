@@ -99,16 +99,16 @@ class Board(object):
         row = self.rows - 1
         while row >= 0:
             found = True
-            for col in xrange(0, self.cols):
+            for col in range(0, self.cols):
                 if not self.block_at(row, col):
                     found = False
                     break
             if found:
                 lines += 1
-                for col in xrange(0, self.cols):
+                for col in range(0, self.cols):
                     self.del_block_at(row, col)
-                for col in xrange(0, self.cols):
-                    for r in xrange(row - 1, -1, -1):
+                for col in range(0, self.cols):
+                    for r in range(row - 1, -1, -1):
                         b = self.block_at(r, col)
                         if b:
                             b.row += 1
@@ -133,7 +133,7 @@ class Board(object):
                 return b
 
     def del_block_at(self, row, col):
-        for i in xrange(len(self.landed)):
+        for i in range(len(self.landed)):
             b = self.landed[i]
             if b.row == row and b.col == col:
                 self.landed.pop(i)
