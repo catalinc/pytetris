@@ -16,8 +16,12 @@ Run `python game.py` to start the game.
 * ←,↓,→ - move piece
 * z - rotate piece CW
 * x - rotate piece CCW
-* Space - drop piece
+* space - drop piece
+* p - pause game
+* r - resume (new) game
 
 ### Todo
-- [ ] Game over and restart
-- [ ] Pause / resume
+- [ ] More tests
+- [ ] Save game
+- [X] Game over and restart
+- [X] Pause / resume
