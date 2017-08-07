@@ -18,7 +18,8 @@ class PieceTest(unittest.TestCase):
                 direction, position, expected_position = t
                 p = board.Piece(s, *position)
                 p.move(direction)
-                self.assertEqual(expected_position, p.position(), "failed for {}".format(s))
+                self.assertEqual(expected_position, p.position(),
+                                 "failed for {}".format(s))
 
     def test_rotate_should_change_blocks_except_for_O(self):
         for s in board.ALL_SHAPES:
@@ -27,9 +28,11 @@ class PieceTest(unittest.TestCase):
             p.rotate()
             rotated_blocks = p.blocks()
             if s != board.SHAPE_O:
-                self.assertNotEqual(initial_blocks, rotated_blocks, "failed for {}".format(s))
+                self.assertNotEqual(
+                    initial_blocks, rotated_blocks, "failed for {}".format(s))
             else:
-                self.assertEqual(initial_blocks, rotated_blocks, "failed for O")
+                self.assertEqual(
+                    initial_blocks, rotated_blocks, "failed for O")
 
     def test_rotate_and_back_should_not_change_blocks(self):
         for s in board.ALL_SHAPES:
@@ -38,7 +41,8 @@ class PieceTest(unittest.TestCase):
             p.rotate()
             p.rotate(ccw=True)
             rotated_blocks = p.blocks()
-            self.assertEqual(initial_blocks, rotated_blocks, "failed for {}".format(s))
+            self.assertEqual(initial_blocks, rotated_blocks,
+                             "failed for {}".format(s))
 
 
 if __name__ == '__main__':

@@ -106,16 +106,17 @@ class Game(object):
 
     def draw_text(self, text, y):
         w, h = self.font.size(text)
+        x = self.board_width + (self.width - self.board_width - w) / 2
         text_surface = self.font.render(text, 1, self.text_color)
-        self.screen.blit(text_surface,
-                         (self.board_width + (self.width - self.board_width - w) / 2, y))
+        self.screen.blit(text_surface, (x, y))
 
     def draw_piece(self, piece):
         for b in piece.blocks():
             self.draw_block(b)
 
     def draw_next_piece(self, y):
-        x = self.board_width + (self.width - self.board_width - self.block_size) / 2
+        x = self.board_width + \
+            (self.width - self.board_width - self.block_size) / 2
         row = y / self.block_size
         col = x / self.block_size - 1
         piece = board.Piece(self.state.next_shape(), row, col)
